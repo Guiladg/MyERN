@@ -16,10 +16,16 @@ function useRest() {
 			// Log
 			if (process.env.NODE_ENV !== 'production') {
 				console.info(
-					'\x1B[32m%s\x1B[0m \x1B[37m/%s\x1B[0m \x1B[35m🡆\x1B[0m \x1B[37m%O\x1B[0m \x1B[36m🡄\x1B[0m %O',
+					'%c%s%c /%s %c🡆%c %O %c🡄%c %O',
+					'color: green; border: 1px solid green; padding: 0 2px',
 					config.method.toUpperCase(),
+					'color: inherit',
 					config.url,
+					'color: magenta',
+					'color: inherit',
 					config.data ?? '-',
+					'color: cyan',
+					'color: inherit',
 					response
 				);
 			}
@@ -28,11 +34,17 @@ function useRest() {
 		} catch (error) {
 			// Log
 			if (process.env.NODE_ENV !== 'production') {
-				console.error(
-					'\x1B[31m%s\x1B[0m \x1B[37m/%s\x1B[0m \x1B[35m🡆\x1B[0m \x1B[37m%O\x1B[0m \x1B[36m🡄\x1B[0m %O',
+				console.info(
+					'%c%s%c /%s %c🡆%c %O %c🡄%c %O',
+					'color: red; border: 1px solid red; padding: 0 2px',
 					config.method.toUpperCase(),
+					'color: inherit',
 					config.url,
+					'color: magenta',
+					'color: inherit',
 					config.data ?? '-',
+					'color: cyan',
+					'color: inherit',
 					error.response
 				);
 			}
@@ -50,7 +62,18 @@ function useRest() {
 
 					// Log
 					if (process.env.NODE_ENV !== 'production') {
-						console.warn('Trying to refresh tokens %O', responseRefresh);
+						console.info(
+							'%c%s%c %s%c %s %c🡄%c %O',
+							'color: green; border: 1px solid green; padding: 0 2px',
+							'GET',
+							'color: olive',
+							'Refreshing tokens',
+							'color: inherit',
+							'/auth/refresh',
+							'color: cyan',
+							'color: inherit',
+							responseRefresh
+						);
 					}
 
 					// Repeat original request
@@ -60,11 +83,23 @@ function useRest() {
 					if (Number(refreshError.response.status) === 401) {
 						// Log
 						if (process.env.NODE_ENV !== 'production') {
-							console.error('Session closed %O', refreshError);
+							console.info(
+								'%c%s%c %s%c %s %c🡄%c %O',
+								'color: red; border: 1px solid red; padding: 0 2px',
+								'GET',
+								'color: olive',
+								'Refreshing tokens',
+								'color: inherit',
+								'/auth/refresh',
+								'color: cyan',
+								'color: inherit',
+								refreshError
+							);
 						}
 
 						// First show modal, then complete logout
-						modalDialog({ type: 'error', title: 'Unauthorized', text: 'A new log in is necessary.' }).finally(() => logOut());
+						await modalDialog({ type: 'error', title: 'Unauthorized', text: 'A new log in is necessary.' });
+						logOut();
 					}
 				}
 			}

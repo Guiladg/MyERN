@@ -126,9 +126,10 @@ function EditForm(props: { id?: string }) {
 
 		// Execute saving
 		rest({ method, url, data })
-			.then(({ data }) => {
+			.then(async ({ data }) => {
 				// Show success dialog, then go back
-				modalDialog({ type: 'success', title: `${actionName} user`, text: data.text }).then(() => navigate(-1));
+				await modalDialog({ type: 'success', title: `${actionName} user`, text: data.text });
+				navigate(-1);
 			})
 			.catch(({ data }) => {
 				// Show error dialog
@@ -259,7 +260,7 @@ function EditForm(props: { id?: string }) {
 					</Grid>
 				</Grid>
 				<Stack direction="row" gap={2} sx={{ mt: 3 }} flexWrap="wrap">
-					<ProgressButton variant="contained" type="submit" loading={saving} onClick={() => handleSave()}>
+					<ProgressButton variant="contained" type="submit" loading={saving}>
 						Save
 					</ProgressButton>
 					<Button color="error" variant="outlined" disabled={saving} onClick={() => navigate(-1)}>

@@ -40,13 +40,13 @@ class AuthController {
 
 		// Send tokens to the client inside cookies
 		res.cookie('access_token', newAccessToken, {
-			secure: process.env.NODE_ENV === 'production',
-			httpOnly: process.env.NODE_ENV === 'production',
+			secure: true,
+			httpOnly: true,
 			maxAge: Number(process.env.ACCESS_TOKEN_LIFE) * 60 * 1000
 		});
 		res.cookie('refresh_token', newRefreshToken, {
-			secure: process.env.NODE_ENV === 'production',
-			httpOnly: process.env.NODE_ENV === 'production',
+			secure: true,
+			httpOnly: true,
 			maxAge: Number(process.env.REFRESH_TOKEN_LIFE) * 60 * 1000
 		});
 

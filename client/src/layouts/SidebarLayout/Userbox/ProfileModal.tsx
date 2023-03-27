@@ -67,7 +67,7 @@ function ProfileModal(props: PasswordModalProps) {
 	 * Submit changes
 	 */
 	const handleSubmit = () => {
-		// Validate field
+		// Validate fields
 		const temp = initialValidation;
 		temp.name = values.name.length ? temp.name : 'This is a required field';
 		temp.last_name = values.last_name.length ? temp.last_name : 'This is a required field';
@@ -86,12 +86,12 @@ function ProfileModal(props: PasswordModalProps) {
 
 		// Change data through API
 		setLoading(true);
-		rest({ method: 'patch', url: 'usuario/profile', data: values })
-			.then((response) => {
-				modalDialog({ type: 'success', title: 'User profile', text: response.data }).then(() => onClose());
+		rest({ method: 'patch', url: 'user/profile', data: values })
+			.then(({ data }) => {
+				modalDialog({ type: 'success', title: 'User profile', text: data.text }).then(() => onClose());
 			})
-			.catch((error) => {
-				modalDialog({ type: 'error', title: 'User profile', text: error.data });
+			.catch(({ data }) => {
+				modalDialog({ type: 'error', title: 'User profile', text: data });
 			})
 			.finally(() => setLoading(false));
 	};

@@ -31,11 +31,9 @@ function PasswordModal(props: PasswordModalProps) {
 
 	// Hooks
 	const modalDialog = useModalDialog();
-
 	const { changePassword, logOut } = useAuth();
 
 	// States
-
 	const [loading, setLoading] = useState(false);
 
 	const initialValues = {
@@ -86,7 +84,7 @@ function PasswordModal(props: PasswordModalProps) {
 	};
 
 	const handleSubmit = () => {
-		// Valida los campos
+		// Validate fields
 		const temp = initialValidation;
 		temp.newPassword2 = values.newPassword !== values.newPassword2 ? 'Passwords do not match' : temp.newPassword2;
 		temp.newPassword = values.newPassword.length < 4 ? 'Four characters at least' : temp.newPassword;
@@ -98,15 +96,14 @@ function PasswordModal(props: PasswordModalProps) {
 			return;
 		}
 
-		// Ejecuta el cambio
+		// Save data
 		setLoading(true);
 		changePassword(values)
-			.then((response) => {
-				modalDialog({ type: 'success', title: 'Cambio de contraseña', text: response + '<br/>' + 'Se deberá volver a iniciar sesión.' }).then(() =>
-					logOut()
-				);
+			.then(async (response) => {
+				await modalDialog({ type: 'success', title: 'Change password', text: response + '<br/>' + 'A new login is necessary..' });
+				logOut();
 			})
-			.catch((response) => modalDialog({ type: 'error', title: 'Cambio de contraseña', text: response }))
+			.catch((response) => modalDialog({ type: 'error', title: 'Change password', text: response }))
 			.finally(() => setLoading(false));
 	};
 
@@ -132,6 +129,7 @@ function PasswordModal(props: PasswordModalProps) {
 								value={values.oldPassword}
 								onChange={handleChange('oldPassword')}
 								disabled={loading}
+								autoComplete="off"
 								endAdornment={
 									<InputAdornment position="end">
 										<IconButton aria-label="toggle password visibility" onClick={handleClickShowPassword('oldPassword')} edge="end">
@@ -151,6 +149,7 @@ function PasswordModal(props: PasswordModalProps) {
 								value={values.newPassword}
 								onChange={handleChange('newPassword')}
 								disabled={loading}
+								autoComplete="off"
 								endAdornment={
 									<InputAdornment position="end">
 										<IconButton aria-label="toggle password visibility" onClick={handleClickShowPassword('newPassword')} edge="end">
@@ -167,6 +166,7 @@ function PasswordModal(props: PasswordModalProps) {
 								label="Repeat new password"
 								id="newPassword2"
 								type={showPassword.newPassword ? 'text' : 'password'}
+								autoComplete="off"
 								value={values.newPassword2}
 								onChange={handleChange('newPassword2')}
 								disabled={loading}

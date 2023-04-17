@@ -37,7 +37,7 @@ dataSource
 		app.use(bodyParser.json());
 		app.use(cookieParser());
 
-		// API routs
+		// API routes
 		app.use(`/${process.env.API_ROUTE}/`, routes);
 
 		// Start listening requests

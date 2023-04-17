@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
-import User from './models/User';
+import User from './models/user';
 
 // Load .env file
 dotenv.config();

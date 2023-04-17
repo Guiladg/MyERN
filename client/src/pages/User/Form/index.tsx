@@ -1,7 +1,6 @@
 import { Helmet } from 'react-helmet-async';
-import PageHeader from './PageHeader';
 import PageTitleWrapper from 'src/components/PageTitleWrapper';
-import { Container } from '@mui/material';
+import { Container, Grid, Typography } from '@mui/material';
 import Footer from 'src/components/Footer';
 import EditForm from './EditForm';
 import { useParams } from 'react-router-dom';
@@ -15,7 +14,14 @@ function Form() {
 				<title>Usuarios</title>
 			</Helmet>
 			<PageTitleWrapper>
-				<PageHeader id={id} />
+				<Grid container justifyContent="space-between" alignItems="center">
+					<Grid item>
+						<Typography variant="h3" component="h3" gutterBottom>
+							Users
+						</Typography>
+						<Typography variant="subtitle2">{Number(id) ? 'Edit system user' : 'New system user'}</Typography>
+					</Grid>
+				</Grid>
 			</PageTitleWrapper>
 			<Container maxWidth="lg">
 				<EditForm id={id} />

@@ -59,6 +59,10 @@ function EditForm(props: { id?: string }) {
 			setEditPassword(true);
 			setIsLoading(false);
 		}
+
+		return () => {
+			controller.abort();
+		};
 	}, [id]);
 
 	/**

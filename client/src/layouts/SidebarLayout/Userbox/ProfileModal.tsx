@@ -1,5 +1,5 @@
 import { Stack, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField } from '@mui/material';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import ProgressButton from 'src/components/ProgressButton';
 import useAuth from 'src/contexts/Auth';
 import useRest from 'src/hooks/useRest';
@@ -16,7 +16,7 @@ function ProfileModal(props: PasswordModalProps) {
 	const onClose = useCallback(props.onClose, [props.onClose]);
 
 	// Hooks
-	const { user } = useAuth();
+	const auth = useAuth();
 
 	const modalDialog = useModalDialog();
 
@@ -25,13 +25,12 @@ function ProfileModal(props: PasswordModalProps) {
 	// States
 	const [loading, setLoading] = useState(false);
 
-	const initialValues = {
-		name: user?.name ?? '',
-		last_name: user?.last_name ?? '',
-		username: user?.username ?? '',
-		email: user?.email ?? ''
-	};
-	const [values, setValues] = useState(initialValues);
+	const [values, setValues] = useState({
+		name: '',
+		last_name: '',
+		username: '',
+		email: ''
+	});
 
 	const initialValidation = {
 		name: '',
@@ -40,6 +39,15 @@ function ProfileModal(props: PasswordModalProps) {
 		email: ''
 	};
 	const [validation, setValidation] = useState(initialValidation);
+
+	useEffect(() => {
+		setValues({
+			name: auth?.user?.name ?? '',
+			last_name: auth?.user?.last_name ?? '',
+			username: auth?.user?.username ?? '',
+			email: auth?.user?.email ?? ''
+		});
+	}, [auth?.user?.id]);
 
 	/**
 	 * Change values state for the selected field
@@ -58,7 +66,6 @@ function ProfileModal(props: PasswordModalProps) {
 	 * Close profile modal
 	 */
 	const handleClose = () => {
-		setValues(initialValues);
 		setValidation(initialValidation);
 		onClose();
 	};
@@ -67,18 +74,18 @@ function ProfileModal(props: PasswordModalProps) {
 	 * Submit changes
 	 */
 	const handleSubmit = () => {
-		// Validate fields
+		// Validate field
 		const temp = initialValidation;
-		temp.name = values.name.length ? temp.name : 'This is a required field';
-		temp.last_name = values.last_name.length ? temp.last_name : 'This is a required field';
-		temp.username = values.username.length ? temp.username : 'This is a required field';
+		temp.name = values.name.length ? temp.name : 'Este campo es obligatorio';
+		temp.last_name = values.last_name.length ? temp.last_name : 'Este campo es obligatorio';
+		temp.username = values.username.length ? temp.username : 'Este campo es obligatorio';
 		temp.email =
 			/^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(
 				values.email
 			)
 				? temp.email
-				: 'This email address is incorrect';
-		temp.email = values.email.length ? temp.email : 'This is a required field';
+				: 'Direccion de email es incorrecta';
+		temp.email = values.email.length ? temp.email : 'Este campo es obligatorio';
 		setValidation({ ...temp });
 		if (!Object.values(temp).every((x) => x === '')) {
 			return;
@@ -88,10 +95,10 @@ function ProfileModal(props: PasswordModalProps) {
 		setLoading(true);
 		rest({ method: 'patch', url: 'user/profile', data: values })
 			.then(({ data }) => {
-				modalDialog({ type: 'success', title: 'User profile', text: data.text }).then(() => onClose());
+				modalDialog({ type: 'success', title: 'Datos personales', text: data.text }).then(() => onClose());
 			})
 			.catch(({ data }) => {
-				modalDialog({ type: 'error', title: 'User profile', text: data });
+				modalDialog({ type: 'error', title: 'Datos personales', text: data });
 			})
 			.finally(() => setLoading(false));
 	};
@@ -106,14 +113,24 @@ function ProfileModal(props: PasswordModalProps) {
 				}}
 				autoComplete="on"
 			>
-				<DialogTitle>User profile</DialogTitle>
+				<DialogTitle>Datos personales</DialogTitle>
 				<DialogContent>
 					<Stack spacing={2} sx={{ mt: 2 }}>
 						<TextField
 							sx={{ width: '100%' }}
+							error={Boolean(validation.username)}
+							id="username"
+							label="Nombre de usuario"
+							helperText={validation.username}
+							onChange={handleChange('username')}
+							value={values.username}
+							disabled
+						/>
+						<TextField
+							sx={{ width: '100%' }}
 							error={Boolean(validation.name)}
 							id="name"
-							label="First name"
+							label="Nombre"
 							helperText={validation.name}
 							onChange={handleChange('name')}
 							value={values.name}
@@ -123,20 +140,10 @@ function ProfileModal(props: PasswordModalProps) {
 							sx={{ width: '100%' }}
 							error={Boolean(validation.last_name)}
 							id="last_name"
-							label="Last name"
+							label="Apellido"
 							helperText={validation.last_name}
 							onChange={handleChange('last_name')}
 							value={values.last_name}
-							required
-						/>
-						<TextField
-							sx={{ width: '100%' }}
-							error={Boolean(validation.username)}
-							id="username"
-							label="Username"
-							helperText={validation.username}
-							onChange={handleChange('username')}
-							value={values.username}
 							required
 						/>
 						<TextField
@@ -153,10 +160,10 @@ function ProfileModal(props: PasswordModalProps) {
 				</DialogContent>
 				<DialogActions>
 					<ProgressButton type="submit" loading={loading}>
-						Ok
+						Aceptar
 					</ProgressButton>
 					<Button color="error" onClick={handleClose} autoFocus>
-						Cancel
+						Cancelar
 					</Button>
 				</DialogActions>
 			</form>

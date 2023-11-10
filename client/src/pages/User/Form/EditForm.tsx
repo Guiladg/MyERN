@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Stack, Button, Card, CardContent, FormControl, FormHelperText, Grid, InputLabel, MenuItem, Select, TextField } from '@mui/material';
+import { useState, useEffect, ReactNode } from 'react';
+import { Stack, Button, Card, CardContent, FormControl, FormHelperText, Grid, InputLabel, MenuItem, Select, TextField, SelectChangeEvent } from '@mui/material';
 import useRest from 'src/hooks/useRest';
-import { User, userRolesList, UserValidation } from 'src/models/user';
+import { User, userRoles, userRolesLabel } from 'src/models/user';
 import ProgressButton from 'src/components/ProgressButton';
 import { useNavigate } from 'react-router-dom';
 import { useModalDialog } from 'src/contexts/ModalDialog';
 import FormSkeleton from 'src/components/FormSkeleton';
+import { Validate } from 'src/utils/types';
 
 function EditForm(props: { id?: string }) {
 	// Props
@@ -18,19 +19,33 @@ function EditForm(props: { id?: string }) {
 		last_name: '',
 		id: 0,
 		username: '',
-		role: '',
+		role: '' as 'ADMIN',
 		email: ''
 	};
 	const [values, setValues] = useState<User>(initialValues);
-	const [validation, setValidation] = useState<UserValidation>({});
+	const [validation, setValidation] = useState<Validate<User>>({});
 	const [editPassword, setEditPassword] = useState(!edit);
 	const [saving, setSaving] = useState(false);
-	const [isLoadingData, setIsLoading] = useState(false);
+	const [isLoadingData, setIsLoading] = useState(true);
 
 	// Hooks
 	const rest = useRest();
 	const navigate = useNavigate();
 	const modalDialog = useModalDialog();
+
+	// Set rest parameters depending if it is edition or creation
+	let method: string;
+	let url: string;
+	let actionName: string;
+	if (edit) {
+		method = 'patch';
+		url = 'user/' + id;
+		actionName = 'Editar usuario';
+	} else {
+		method = 'post';
+		url = 'user';
+		actionName = 'Nuevo usuario';
+	}
 
 	// Fetch user data on mount and when id change
 	useEffect(() => {
@@ -38,28 +53,27 @@ function EditForm(props: { id?: string }) {
 		const controller = new AbortController();
 		const signal = controller.signal;
 
-		if (edit) {
-			// Start loading process
-			setIsLoading(true);
-
-			// Fetch user data
-			rest({ method: 'get', url: `user/${id}`, signal })
-				.then(({ data }) => {
-					// Set form data
+		// Start loading process
+		setIsLoading(true);
+		try {
+			(async (signal) => {
+				// Fetch user data if id is provided
+				if (Number(id)) {
+					const data = await rest({ method: 'get', url: `user/${id}`, signal });
 					setValues(data);
-				})
-				.finally(() => {
-					// End loading process
-					setIsLoading(false);
-				});
-
-			setEditPassword(false);
-		} else {
-			setValues(initialValues);
-			setEditPassword(true);
-			setIsLoading(false);
+					setEditPassword(false);
+				} else {
+					setValues(initialValues);
+				}
+				// Finish loading process
+				setIsLoading(false);
+			})(signal);
+		} catch {
+			// Show error dialog
+			modalDialog({ type: 'error', title: actionName, text: 'Error inesperado' });
 		}
 
+		// Abort fetch on unmount
 		return () => {
 			controller.abort();
 		};
@@ -86,20 +100,20 @@ function EditForm(props: { id?: string }) {
 		const { id, ...data } = values;
 
 		// Validate fields
-		const temp: UserValidation = {};
-		temp.name = values.name.length ? temp.name : 'This is a required field';
-		temp.last_name = values.last_name.length ? temp.last_name : 'This is a required field';
-		temp.username = values.username.length ? temp.username : 'This is a required field';
+		const temp: Validate<User> = {};
+		temp.name = values.name.length ? temp.name : 'Este campo es obligatorio';
+		temp.last_name = values.last_name.length ? temp.last_name : 'Este campo es obligatorio';
+		temp.username = values.username.length ? temp.username : 'Este campo es obligatorio';
 		temp.email =
 			/^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(
 				values.email
 			)
 				? temp.email
-				: 'This email address is incorrect';
-		temp.email = values.email.length ? temp.email : 'This is a required field';
-		temp.role = values.role.length ? temp.role : 'This is a required field';
-		temp.password = values.password?.length < 4 && editPassword ? 'Four characters at least' : temp.password;
-		temp.password = !values.password?.length && editPassword ? 'This is a required field' : temp.password;
+				: 'Dirección de email incorrecta';
+		temp.email = values.email.length ? temp.email : 'Este campo es obligatorio';
+		temp.role = values.role.length ? temp.role : 'Este campo es obligatorio';
+		temp.password = values.password?.length < 4 && editPassword ? '4 caracteres como mínimo' : temp.password;
+		temp.password = !values.password?.length && editPassword ? 'Este campo es obligatorio' : temp.password;
 		setValidation({ ...temp });
 
 		// Stop if some validation failed
@@ -110,34 +124,21 @@ function EditForm(props: { id?: string }) {
 		// Start saving process
 		setSaving(true);
 
-		// Set rest parameters depending if it is edition or creation
-		let method: string;
-		let url: string;
-		let actionName: string;
-		if (edit) {
-			method = 'patch';
-			url = 'user/' + id;
-			actionName = 'Edit';
-			// Do not send password data if not meant to change it
-			if (!editPassword) {
-				delete data.password;
-			}
-		} else {
-			method = 'post';
-			url = 'user';
-			actionName = 'New';
+		// Do not send password data if not meant to change it
+		if (edit && !editPassword) {
+			delete data.password;
 		}
 
 		// Execute saving
 		rest({ method, url, data })
-			.then(async ({ data }) => {
+			.then(async ({ text }) => {
 				// Show success dialog, then go back
-				await modalDialog({ type: 'success', title: `${actionName} user`, text: data.text });
+				await modalDialog({ type: 'success', title: actionName, text });
 				navigate(-1);
 			})
-			.catch(({ data }) => {
+			.catch(({ text }) => {
 				// Show error dialog
-				modalDialog({ type: 'error', title: `${actionName} user`, text: data });
+				modalDialog({ type: 'error', title: actionName, text });
 			})
 			.finally(() => {
 				// End saving process
@@ -168,7 +169,7 @@ function EditForm(props: { id?: string }) {
 								sx={{ width: '100%' }}
 								error={Boolean(validation.name)}
 								id="name"
-								label="First name"
+								label="Nombre"
 								helperText={validation.name}
 								onChange={handleChange('name')}
 								value={values.name}
@@ -183,7 +184,7 @@ function EditForm(props: { id?: string }) {
 								sx={{ width: '100%' }}
 								error={Boolean(validation.last_name)}
 								id="last_name"
-								label="Last name"
+								label="Apellido"
 								helperText={validation.last_name}
 								onChange={handleChange('last_name')}
 								value={values.last_name}
@@ -197,7 +198,7 @@ function EditForm(props: { id?: string }) {
 								sx={{ width: '100%' }}
 								error={Boolean(validation.username)}
 								id="username"
-								label="Username"
+								label="Nombre de usuario"
 								helperText={validation.username}
 								onChange={handleChange('username')}
 								value={values.username}
@@ -222,11 +223,11 @@ function EditForm(props: { id?: string }) {
 					<Grid item xs={12} sm={6}>
 						<FormSkeleton loading={isLoadingData}>
 							<FormControl fullWidth error={Boolean(validation.role)}>
-								<InputLabel id="roleLabel">User role *</InputLabel>
-								<Select labelId="roleLabel" id="role" value={values.role} label="User role" onChange={handleChange('role')} required>
-									{userRolesList().map((userRole) => (
-										<MenuItem key={'userRole_' + userRole.key} value={userRole.key}>
-											{userRole.value}
+								<InputLabel id="roleLabel">Rol de usuario *</InputLabel>
+								<Select labelId="roleLabel" id="role" value={values.role} label="Rol de usuario" onChange={handleChange('role')} required>
+									{userRoles.map((userRole) => (
+										<MenuItem key={'userRole_' + userRole} value={userRole}>
+											{userRolesLabel[userRole]}
 										</MenuItem>
 									))}
 								</Select>
@@ -242,7 +243,7 @@ function EditForm(props: { id?: string }) {
 										sx={{ width: '100%' }}
 										error={Boolean(validation.password)}
 										id="password"
-										label="Password"
+										label="Contraseña"
 										helperText={validation.password}
 										onChange={handleChange('password')}
 										value={values.password ?? ''}
@@ -251,13 +252,13 @@ function EditForm(props: { id?: string }) {
 									/>
 									{edit && (
 										<Button variant="outlined" sx={{ mt: '9px !important' }} onClick={() => setEditPassword(false)}>
-											Cancel
+											Cancelar
 										</Button>
 									)}
 								</Stack>
 							) : (
 								<Button sx={{ mt: '9px' }} variant="outlined" onClick={() => setEditPassword(true)}>
-									Change password
+									Cambiar contraseña
 								</Button>
 							)}
 						</FormSkeleton>
@@ -265,10 +266,10 @@ function EditForm(props: { id?: string }) {
 				</Grid>
 				<Stack direction="row" gap={2} sx={{ mt: 3 }} flexWrap="wrap">
 					<ProgressButton variant="contained" type="submit" loading={saving}>
-						Save
+						Guardar
 					</ProgressButton>
 					<Button color="error" variant="outlined" disabled={saving} onClick={() => navigate(-1)}>
-						Cancel
+						Cancelar
 					</Button>
 				</Stack>
 			</CardContent>

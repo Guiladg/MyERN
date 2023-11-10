@@ -27,8 +27,8 @@ function Login(props: { visible: boolean; onShowRestore: () => void }) {
 
 	const handleClickLogin = () => {
 		const temp = validation;
-		temp.username = values.username.length ? '' : 'This is a required field';
-		temp.password = values.password.length ? '' : 'This is a required field';
+		temp.username = values.username.length ? '' : 'Campo obligatorio';
+		temp.password = values.password.length ? '' : 'Campo obligatorio';
 		setValidation({ ...temp });
 		if (Object.values(temp).every((x) => x === '')) {
 			logIn(values).catch((response) => modalDialog({ type: 'error', title: 'Log in error', text: response }));

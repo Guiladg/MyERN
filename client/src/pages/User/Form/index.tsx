@@ -17,9 +17,9 @@ function Form() {
 				<Grid container justifyContent="space-between" alignItems="center">
 					<Grid item>
 						<Typography variant="h3" component="h3" gutterBottom>
-							Users
+							Usuario
 						</Typography>
-						<Typography variant="subtitle2">{Number(id) ? 'Edit system user' : 'New system user'}</Typography>
+						<Typography variant="subtitle2">{Number(id) ? 'Editar usuario del sistema' : 'Nuevo usuario del sistema'}</Typography>
 					</Grid>
 				</Grid>
 			</PageTitleWrapper>

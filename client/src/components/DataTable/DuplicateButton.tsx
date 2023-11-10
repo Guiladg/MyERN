@@ -1,19 +1,18 @@
 import { Tooltip, IconButton, useTheme } from '@mui/material';
 import { NavLink } from 'react-router-dom';
-import EditTwoToneIcon from '@mui/icons-material/EditTwoTone';
-import joinPath from 'src/utils/path';
+import CopyAllTwoToneIcon from '@mui/icons-material/CopyAllTwoTone';
 
-function EditButton({ id, disabled, baseURL }) {
+function DuplicateButton({ id, disabled }) {
 	const theme = useTheme();
 	return (
-		<Tooltip title="Editar" arrow disableInteractive>
+		<Tooltip title="Duplicar" arrow disableInteractive>
 			<span>
 				<IconButton
 					sx={{
 						'&:hover': {
-							background: theme.colors.primary.lighter
+							background: theme.colors.secondary.lighter
 						},
-						color: theme.palette.primary.main
+						color: theme.palette.secondary.main
 					}}
 					color="inherit"
 					size="small"
@@ -21,13 +20,13 @@ function EditButton({ id, disabled, baseURL }) {
 						e.stopPropagation(); // Do not select this row after clicking
 					}}
 					component={NavLink}
-					to={joinPath(baseURL, String(id))}
+					to={`${String(id)}?duplo`}
 					disabled={disabled}
 				>
-					<EditTwoToneIcon fontSize="small" />
+					<CopyAllTwoToneIcon fontSize="small" />
 				</IconButton>
 			</span>
 		</Tooltip>
 	);
 }
-export default EditButton;
+export default DuplicateButton;

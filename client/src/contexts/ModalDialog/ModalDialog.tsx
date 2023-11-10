@@ -68,7 +68,7 @@ export const ModalDialog: FC<ModalDialogProps> = ({ open, title, type, text, ima
 				{type === 'confirm' && (
 					<>
 						<Button color="primary" onClick={onSubmit}>
-							Yes
+							Sí
 						</Button>
 						<Button color="error" onClick={onClose} autoFocus>
 							No
@@ -77,7 +77,7 @@ export const ModalDialog: FC<ModalDialogProps> = ({ open, title, type, text, ima
 				)}
 				{(type === 'error' || type === 'success') && (
 					<Button color="primary" onClick={onSubmit} autoFocus>
-						Ok
+						Aceptar
 					</Button>
 				)}
 				{type === 'image' && (
@@ -89,7 +89,7 @@ export const ModalDialog: FC<ModalDialogProps> = ({ open, title, type, text, ima
 							<ZoomInTwoToneIcon />
 						</Button>
 						<Button color="primary" onClick={onSubmit} autoFocus>
-							Close
+							Cerrar
 						</Button>
 					</>
 				)}

@@ -1,6 +1,10 @@
-import { BaseEntity, Entity, PrimaryGeneratedColumn, Column, Unique, AfterLoad, VirtualColumn } from 'typeorm';
+import { BaseEntity, Entity, PrimaryGeneratedColumn, Column, Unique, VirtualColumn } from 'typeorm';
 import { Length, IsNotEmpty } from 'class-validator';
 import * as bcrypt from 'bcryptjs';
+import { safeVirtualColumnQuery } from '../utils/typeORM';
+
+export const userRoles = ['admin'] as const;
+export type UserRole = (typeof userRoles)[number];
 
 @Entity('user')
 @Unique(['username', 'email'])
@@ -8,16 +12,16 @@ export default class User extends BaseEntity {
 	@PrimaryGeneratedColumn()
 	id: number;
 
-	@Column()
+	@Column({ nullable: true })
 	@IsNotEmpty()
-	name: string;
+	firstName: string;
 
-	@Column()
+	@Column({ nullable: true })
 	@IsNotEmpty()
-	last_name: string;
+	lastName: string;
 
-	@VirtualColumn({ query: (alias) => `CONCAT(${alias}.last_name, ', ', ${alias}.name)` })
-	full_name: string;
+	@VirtualColumn({ query: (alias) => safeVirtualColumnQuery(alias, `CONCAT(${alias}."lastName", ', ', ${alias}."firstName")`) })
+	fullName: string;
 
 	@Column()
 	@Length(4, 20)
@@ -29,20 +33,17 @@ export default class User extends BaseEntity {
 
 	@Column()
 	@IsNotEmpty()
-	role: string;
+	role: UserRole;
 
-	@Column({ default: null })
+	@Column()
 	@Length(3, 320)
 	email: string;
-
-	@Column({ default: null })
-	refreshToken: string;
 
 	hashPassword() {
 		this.password = bcrypt.hashSync(this.password, 8);
 	}
 
-	checkIfUnencryptedPasswordIsValid(unencryptedPassword: string) {
+	checkPassword(unencryptedPassword: string) {
 		return bcrypt.compareSync(unencryptedPassword, this.password);
 	}
 }

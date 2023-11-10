@@ -1,10 +1,12 @@
-import { styled, Switch, SwitchProps } from '@mui/material';
+import { FormControl, FormControlLabel, FormControlLabelProps, FormControlProps, FormHelperText, styled, Switch, SwitchProps } from '@mui/material';
+import { PartialBy } from 'src/utils/types';
 
-const BigSwitch = styled((props: SwitchProps) => <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />)(({ theme }) => ({
+const BigSwitchElement = styled((props: SwitchProps) => <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple {...props} />)(({ theme }) => ({
 	width: 42,
 	height: 26,
 	padding: 0,
-	marginRight: '8px',
+	marginLeft: '12px',
+	marginRight: '12px',
 	'& .MuiSwitch-switchBase': {
 		padding: 0,
 		margin: 2,
@@ -13,7 +15,7 @@ const BigSwitch = styled((props: SwitchProps) => <Switch focusVisibleClassName="
 			transform: 'translateX(16px)',
 			color: '#fff',
 			'& + .MuiSwitch-track': {
-				backgroundColor: theme.colors.secondary.light,
+				backgroundColor: theme.colors.secondary.lighter,
 				opacity: 1,
 				border: 0
 			},
@@ -46,4 +48,13 @@ const BigSwitch = styled((props: SwitchProps) => <Switch focusVisibleClassName="
 		})
 	}
 }));
+function BigSwitch(props: FormControlProps & { label: string; helperText?: string; checked?: boolean }) {
+	const { label, helperText, checked, ...restProps } = props;
+	return (
+		<FormControl fullWidth {...restProps}>
+			<FormControlLabel sx={{ minHeight: '53.13px' }} label={label} control={<BigSwitchElement checked={checked} />} />
+			<FormHelperText>{helperText}</FormHelperText>
+		</FormControl>
+	);
+}
 export default BigSwitch;

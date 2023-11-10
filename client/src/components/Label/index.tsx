@@ -1,10 +1,10 @@
 import { FC, ReactNode } from 'react';
-import PropTypes from 'prop-types';
 import { styled } from '@mui/material/styles';
 
 interface LabelProps {
 	className?: string;
 	color?: 'primary' | 'secondary' | 'error' | 'warning' | 'success' | 'info';
+	style?: React.CSSProperties;
 	children?: ReactNode;
 }
 
@@ -16,9 +16,11 @@ const LabelWrapper = styled('span')(
       border-radius: ${theme.general.borderRadius};
       display: inline-flex;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       max-height: ${theme.spacing(3)};
-      
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
       &.MuiLabel {
         &-primary {
           background-color: ${theme.colors.primary.lighter};
@@ -59,12 +61,6 @@ const Label: FC<LabelProps> = ({ className = '', color = 'secondary', children, 
 			{children}
 		</LabelWrapper>
 	);
-};
-
-Label.propTypes = {
-	children: PropTypes.node,
-	className: PropTypes.string,
-	color: PropTypes.oneOf(['primary', 'secondary', 'error', 'warning', 'success', 'info'])
 };
 
 export default Label;

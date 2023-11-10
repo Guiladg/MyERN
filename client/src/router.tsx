@@ -4,12 +4,11 @@ import SidebarLayout from 'src/layouts/SidebarLayout';
 import BaseLayout from 'src/layouts/BaseLayout';
 import SuspenseLoader from 'src/components/SuspenseLoader';
 
-const Loader = (Component: any) => (props: any) =>
-	(
-		<Suspense fallback={<SuspenseLoader />}>
-			<Component {...props} />
-		</Suspense>
-	);
+const Loader = (Component: any) => (props: any) => (
+	<Suspense fallback={<SuspenseLoader />}>
+		<Component {...props} />
+	</Suspense>
+);
 
 // Not found
 const NotFound = Loader(lazy(() => import('src/pages/NotFound')));

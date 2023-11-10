@@ -24,4 +24,7 @@ router.post('/reset', AuthController.resetPassword);
 // Reset password (create a new one)
 router.post('/restore', AuthController.restorePassword);
 
+// Get logged in user data
+router.get('/user', [checkJwt], AuthController.userData);
+
 export default router;

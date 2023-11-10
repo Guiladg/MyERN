@@ -6,7 +6,7 @@ function DeleteButton({ disabled, onDelete, isDeleting }) {
 
 	return (
 		<div style={{ position: 'relative' }}>
-			<Tooltip title="Delete" arrow disableInteractive>
+			<Tooltip title="Eliminar" arrow disableInteractive>
 				<span>
 					<IconButton
 						sx={{

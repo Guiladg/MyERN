@@ -8,28 +8,21 @@ import ThemeProvider from './theme/ThemeProvider';
 import { CssBaseline } from '@mui/material';
 import { ModalDialogProvider } from './contexts/ModalDialog';
 import { AuthProvider } from './contexts/Auth';
-import axios from 'axios';
-
-// Axios defaults config
-// Add API route to fetch url if not already set
-axios.defaults.baseURL = process.env.REACT_APP_API_ROUTE;
-// Send cookies with every request
-axios.defaults.withCredentials = true;
 
 ReactDOMClient.createRoot(document.getElementById('root')).render(
 	<HelmetProvider>
-		<SidebarProvider>
-			<BrowserRouter>
-				<ThemeProvider>
-					<CssBaseline />
-					<ModalDialogProvider>
-						<AuthProvider>
+		<BrowserRouter>
+			<AuthProvider>
+				<SidebarProvider>
+					<ThemeProvider>
+						<CssBaseline />
+						<ModalDialogProvider>
 							<App />
-						</AuthProvider>
-					</ModalDialogProvider>
-				</ThemeProvider>
-			</BrowserRouter>
-		</SidebarProvider>
+						</ModalDialogProvider>
+					</ThemeProvider>
+				</SidebarProvider>
+			</AuthProvider>
+		</BrowserRouter>
 	</HelmetProvider>
 );
 

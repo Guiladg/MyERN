@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Card } from '@mui/material';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { Card, Tooltip } from '@mui/material';
 import { GridRenderCellParams, GridColDef, GridPaginationModel, GridSortModel } from '@mui/x-data-grid';
 import Label from 'src/components/Label';
 import useRest from 'src/hooks/useRest';
@@ -39,18 +39,14 @@ function ListTable() {
 		}
 
 		// Fetch users data
-		rest({
-			method: 'get',
-			url,
-			signal
-		})
-			.then(({ data }) => {
+		rest({ method: 'get', url, signal })
+			.then((data) => {
 				// Set table data states
 				setTableData(data);
 			})
-			.catch(() => {
+			.catch(({ text }) => {
 				// Show error dialog
-				modalDialog({ type: 'error', title: 'Users list', text: 'Unexpected error' });
+				modalDialog({ type: 'error', title: 'Usuarios', text });
 			})
 			.finally(() => {
 				// End loading process
@@ -62,12 +58,12 @@ function ListTable() {
 	}, [JSON.stringify(pageModel), JSON.stringify(sortModel)]);
 
 	const columns: GridColDef[] = [
-		{ field: 'full_name', headerName: 'Full name', flex: 2 },
-		{ field: 'username', headerName: 'Username', flex: 1 },
+		{ field: 'full_name', headerName: 'Nombre', flex: 2 },
+		{ field: 'username', headerName: 'Usuario', flex: 1 },
 		{ field: 'email', headerName: 'Email', flex: 1 },
 		{
 			field: 'role',
-			headerName: 'Role',
+			headerName: 'Rol',
 			flex: 1,
 			renderCell: (params: GridRenderCellParams) => <Label>{getUserRole(params.value)}</Label>
 		}
@@ -79,7 +75,7 @@ function ListTable() {
 				columns={columns}
 				deleteEndPoint="user"
 				actions={['edit', 'delete']}
-				noDelete={[auth.user.id]}
+				noDelete={[auth.user?.id]}
 				data={tableData}
 				loading={isLoading}
 				onPaginationModelChange={(model) => {

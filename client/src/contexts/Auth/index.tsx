@@ -1,7 +1,9 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router';
+import { useNavigate } from 'react-router';
 import { User } from 'src/models/user';
 import axios, { AxiosError, AxiosResponse } from 'axios';
+import joinPath from 'src/utils/path';
+import useRest from 'src/hooks/useRest';
 
 interface AuthContextType {
 	user?: User;
@@ -18,6 +20,7 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 export function AuthProvider({ children }: { children: ReactNode }): JSX.Element {
 	// Hooks
 	const navigate = useNavigate();
+	const rest = useRest();
 
 	// States
 	const [user, setUser] = useState<User>();
@@ -30,26 +33,12 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
 		const actualUser = localStorage.getItem('user');
 		if (actualUser) {
 			setLoading(true);
-			// Validate authentication token
-			axios
-				.get('auth/validate')
-				.then(() => setUser(JSON.parse(actualUser)))
-				.catch(() => {
-					// log
-					if (process.env.NODE_ENV !== 'production') {
-						console.error('Token validation error');
-						console.warn('Trying to refresh tokens');
-					}
-					// Refresh tokens
-					axios
-						.get('/auth/refresh')
-						.then(() => setUser(JSON.parse(actualUser)))
-						.catch(() => logOut())
-						.finally(() => setLoading(false));
-				})
+			// Validate authentication token and get user data
+			rest({ method: 'get', url: 'auth/user' })
+				.then((data) => setUser(data))
 				.finally(() => setLoading(false));
 		} else {
-			navigate(process.env.REACT_APP_BASEDIR + '/login');
+			navigate(joinPath('/', process.env.REACT_APP_BASEDIR, '/login'));
 		}
 	}, []);
 
@@ -74,12 +63,11 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
 		return new Promise((resolve, reject) => {
 			setLoading(true);
 
-			axios
-				.post('auth/login', loginData)
+			axios({ method: 'post', url: 'auth/login', baseURL: process.env.REACT_APP_API_ROUTE, withCredentials: true, data: loginData })
 				.then((response) => {
 					setUser(response.data);
 					localStorage.setItem('user', JSON.stringify(response.data));
-					navigate(process.env.REACT_APP_BASEDIR);
+					navigate(joinPath('/', process.env.REACT_APP_BASEDIR));
 					resolve(okText(response));
 				})
 				.catch((error) => reject(errorText(error)))
@@ -88,15 +76,21 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
 	}
 
 	/**
-	 * Log out through API
+	 * Log out through API and locally
 	 */
 	function logOut() {
 		setLoading(true);
-		axios.post('auth/logout', {}).finally(() => {
+		axios({ method: 'post', url: 'auth/logout', baseURL: process.env.REACT_APP_API_ROUTE, withCredentials: true }).finally(() => {
 			setLoading(false);
 			setUser(undefined);
+			// Remove saved user
 			localStorage.removeItem('user');
-			navigate(process.env.REACT_APP_BASEDIR + '/login');
+			// Remove all cookies
+			document.cookie.split(';').forEach((cookie) => {
+				document.cookie = cookie.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
+			});
+			// Go to login page
+			window.location.href = joinPath(process.env.REACT_APP_BASEURL, process.env.REACT_APP_BASEDIR, '/login');
 		});
 	}
 
@@ -108,8 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
 	function restorePassword(email: string): Promise<string> {
 		setLoading(true);
 		return new Promise((resolve, reject) => {
-			axios
-				.post(process.env.REACT_APP_API_ROUTE + 'auth/reset', { email: email })
+			axios({ method: 'post', url: 'auth/reset', baseURL: process.env.REACT_APP_API_ROUTE, withCredentials: true, data: { email: email } })
 				.then((response) => resolve(okText(response)))
 				.catch((error) => reject(errorText(error)))
 				.finally(() => setLoading(false));
@@ -124,8 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
 	function changePassword(data: { oldPassword: string; newPassword: string; newPassword2?: string }): Promise<string> {
 		setLoading(true);
 		return new Promise((resolve, reject) => {
-			axios
-				.post('auth/change', data)
+			axios({ method: 'post', url: 'auth/change', baseURL: process.env.REACT_APP_API_ROUTE, withCredentials: true, data })
 				.then((response) => resolve(okText(response)))
 				.catch((error) => reject(errorText(error)))
 				.finally(() => setLoading(false));

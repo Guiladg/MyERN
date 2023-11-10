@@ -1,13 +1,10 @@
 import { Button, ButtonProps, CircularProgress, Box, SxProps } from '@mui/material';
+import { forwardRef } from 'react';
 
 interface ProgressButtonProps extends ButtonProps {
 	loading: boolean;
 }
-interface gg {
-	a: any;
-	b: any;
-}
-function ProgressButton(props: ProgressButtonProps) {
+const ProgressButton = forwardRef((props: ProgressButtonProps, ref: React.MutableRefObject<HTMLButtonElement>) => {
 	const { endIcon, startIcon, children, loading, disabled, sx, ...buttonProps } = props;
 
 	const { m, margin, mt, marginTop, mr, marginRight, mb, marginBottom, ml, marginLeft, mx, marginX, my, marginY, position, width, height, ...style } =
@@ -51,6 +48,7 @@ function ProgressButton(props: ProgressButtonProps) {
 				onClick={() => false}
 				sx={loading ? loadingStyle : normalStyle}
 				variant={buttonProps?.variant === 'outlined' ? 'outlined' : 'contained'}
+				ref={ref}
 			></Button>
 			<Button
 				{...buttonProps}
@@ -82,6 +80,6 @@ function ProgressButton(props: ProgressButtonProps) {
 			)}
 		</Box>
 	);
-}
+});
 
 export default ProgressButton;

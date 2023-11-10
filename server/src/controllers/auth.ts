@@ -4,14 +4,17 @@ import User from '../models/user';
 import { randomBytes } from 'crypto';
 import ResetToken from '../models/resetToken';
 import { sendEmail } from '../utils/sendEmail';
-import { createTokens } from '../utils/jwt';
+import { createTokens, removeToken } from '../utils/jwt';
+import RefreshToken from '../models/refreshToken';
+import { MoreThan } from 'typeorm';
+import { RefreshPayload } from '../types/payload';
 
 class AuthController {
 	static login = async (req: Request, res: Response) => {
 		// Login data from body
 		const { username, password } = req.body;
 		if (!username || !password) {
-			return res.status(400).send();
+			return res.status(400).send('Nombre de usuario y contraseña son obligatorios');
 		}
 
 		// Find user by username or email
@@ -21,88 +24,128 @@ class AuthController {
 				where: [{ username: username.toLowerCase() }, { email: username.toLowerCase() }]
 			});
 		} catch (error) {
-			return res.status(400).send();
+			return res.status(401).send('Nombre de usuario o contraseña incorrectos');
 		}
 
 		// Check password
-		if (!user.checkIfUnencryptedPasswordIsValid(password)) {
-			return res.status(401).send();
+		if (!user.checkPassword(password)) {
+			return res.status(401).send('Nombre de usuario o contraseña incorrectos');
 		}
 
 		// Create tokens and store refresh in database
 		let newAccessToken: string;
 		let newRefreshToken: string;
+		let newControlToken: string;
 		try {
-			[newAccessToken, newRefreshToken] = createTokens(user);
+			[newAccessToken, newRefreshToken, newControlToken] = createTokens(user);
 		} catch (error) {
-			return res.status(500).send();
+			return res.status(500).send('Error en la base de datos');
 		}
 
 		// Send tokens to the client inside cookies
 		res.cookie('access_token', newAccessToken, {
+			sameSite: 'none',
 			secure: true,
 			httpOnly: true,
 			maxAge: Number(process.env.ACCESS_TOKEN_LIFE) * 60 * 1000
 		});
 		res.cookie('refresh_token', newRefreshToken, {
+			sameSite: 'none',
 			secure: true,
 			httpOnly: true,
 			maxAge: Number(process.env.REFRESH_TOKEN_LIFE) * 60 * 1000
 		});
+		res.cookie('control_token', newControlToken, {
+			sameSite: 'none',
+			secure: true,
+			httpOnly: false,
+			maxAge: Number(process.env.REFRESH_TOKEN_LIFE) * 60 * 1000
+		});
 
 		// Return user without unnecessary data
-		const { password: pass, refreshToken, ...retData } = user;
+		const { password: pass, ...retData } = user;
 		res.send(retData);
 	};
 
 	static refresh = async (req: Request, res: Response) => {
+		// Control (non-http-only) token from cookies
+		const controlToken = req.cookies.control_token;
+
 		// Refresh token from cookies
 		const refreshToken = req.cookies.refresh_token;
 
+		// If there is no control token finish logout and return error status
+		if (!controlToken) {
+			// Remove refresh token from database
+			removeToken(refreshToken);
+
+			// Delete cookies from client
+			res.cookie('access_token', '', { maxAge: 1 });
+			res.cookie('refresh_token', '', { maxAge: 1 });
+			return res.status(401).send(process.env.NODE_ENV !== 'production' ? 'Falta token de control' : '');
+		}
+
 		// If there is no token the request is unauthorized
 		if (!refreshToken) {
-			return res.status(403).send();
+			return res.status(401).send(process.env.NODE_ENV !== 'production' ? 'Falta token de refresh' : '');
 		}
 
 		// Validate refresh token
-		let payload: { username: string };
+		let refreshPayload: RefreshPayload;
 		try {
-			payload = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET) as { username: string };
+			refreshPayload = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET) as RefreshPayload;
 		} catch (error) {
-			return res.status(401).send();
+			return res.status(401).send(process.env.NODE_ENV !== 'production' ? 'Token de refresh inválido' : '');
 		}
 
 		// Get user
 		let user: User;
 		try {
-			user = await User.findOneOrFail({ where: { username: payload.username } });
+			user = await User.findOneOrFail({ where: { id: refreshPayload.idUser } });
 		} catch (error) {
-			return res.status(400).send();
+			return res.status(401).send(process.env.NODE_ENV !== 'production' ? 'Usuario no encontrado' : '');
 		}
 
-		// Verify that the refresh token is the last one created
-		if (refreshToken !== user.refreshToken) {
-			return res.status(401).send();
+		// Verify that the refresh token is in database and remove it
+		// Double check validity
+		let refreshTokenRecord: RefreshToken;
+		try {
+			const expirationTime = Math.round(new Date().getTime() / 1000);
+			refreshTokenRecord = await RefreshToken.findOneOrFail({
+				where: { idUser: refreshPayload.idUser, token: refreshPayload.token, expires: MoreThan(expirationTime) }
+			});
+			refreshTokenRecord.remove();
+		} catch (error) {
+			return res.status(401).send(process.env.NODE_ENV !== 'production' ? 'Token de refresh no encontrado' : '');
 		}
 
 		// Create tokens and store refresh in database
 		let newAccessToken: string;
 		let newRefreshToken: string;
+		let newControlToken: string;
 		try {
-			[newAccessToken, newRefreshToken] = createTokens(user);
+			[newAccessToken, newRefreshToken, newControlToken] = createTokens(user);
 		} catch (error) {
-			return res.status(500).send();
+			return res.status(401).send(process.env.NODE_ENV !== 'production' ? 'Error al crear tokens' : '');
 		}
 
 		// Send tokens to the client inside cookies
 		res.cookie('access_token', newAccessToken, {
-			secure: process.env.NODE_ENV === 'production',
-			httpOnly: process.env.NODE_ENV === 'production',
+			sameSite: 'none',
+			secure: true,
+			httpOnly: true,
 			maxAge: Number(process.env.ACCESS_TOKEN_LIFE) * 60 * 1000
 		});
 		res.cookie('refresh_token', newRefreshToken, {
-			secure: process.env.NODE_ENV === 'production',
-			httpOnly: process.env.NODE_ENV === 'production',
+			sameSite: 'none',
+			secure: true,
+			httpOnly: true,
+			maxAge: Number(process.env.REFRESH_TOKEN_LIFE) * 60 * 1000
+		});
+		res.cookie('control_token', newControlToken, {
+			sameSite: 'none',
+			secure: true,
+			httpOnly: false,
 			maxAge: Number(process.env.REFRESH_TOKEN_LIFE) * 60 * 1000
 		});
 		res.send();
@@ -117,30 +160,19 @@ class AuthController {
 		// Refresh token from cookies
 		const refreshToken = req.cookies.refresh_token;
 
-		// If there is a refresh token, try to remove it from user data
-		if (refreshToken) {
-			// Get user
-			const user = await User.findOne({ where: { refreshToken } });
-			if (user) {
-				// Empty refresh token in user data
-				user.refreshToken = null;
-				try {
-					user.save();
-				} catch (error) {
-					// Just avoid nodejs stopping
-				}
-			}
-		}
+		// Remove refresh token from database
+		removeToken(refreshToken);
 
 		// Delete cookies from client
 		res.cookie('access_token', '', { maxAge: 1 });
 		res.cookie('refresh_token', '', { maxAge: 1 });
+		res.cookie('control_token', '', { maxAge: 1 });
 		res.send();
 	};
 
 	static changePassword = async (req: Request, res: Response) => {
 		// Get the username from middlewares
-		const username = res.locals.jwtPayload.username;
+		const username = req?.jwtPayload?.username ?? '';
 
 		// Data for password change
 		const { oldPassword, newPassword } = req.body;
@@ -157,7 +189,7 @@ class AuthController {
 		}
 
 		// Verify current password
-		if (!user.checkIfUnencryptedPasswordIsValid(oldPassword)) {
+		if (!user.checkPassword(oldPassword)) {
 			return res.status(404).send();
 		}
 
@@ -240,7 +272,7 @@ class AuthController {
 		try {
 			resetToken = await ResetToken.findOneOrFail({ where: { idUser: user.id, token: token } });
 		} catch (error) {
-			return res.status(401).send();
+			return res.status(401).send(process.env.NODE_ENV !== 'production' ? 'Token de restauración inválido' : '');
 		}
 
 		// Change password and encrypt
@@ -259,6 +291,23 @@ class AuthController {
 
 		// Return 204
 		res.status(204).send();
+	};
+
+	static userData = async (req: Request, res: Response) => {
+		// idUser from payload
+		const idUser = req?.jwtPayload?.id;
+
+		// Get user
+		let user: User;
+		try {
+			user = await User.findOneOrFail({ where: { id: idUser } });
+		} catch (error) {
+			return res.status(404).send(process.env.NODE_ENV !== 'production' ? 'Usuario inexistente' : '');
+		}
+
+		// Return user without unnecessary data
+		const { password: pass, ...retData } = user;
+		res.send(retData);
 	};
 }
 export default AuthController;

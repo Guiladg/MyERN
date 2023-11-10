@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import AccountCircleTwoToneIcon from '@mui/icons-material/AccountCircleTwoTone';
+import joinPath from '../utils/path';
 
 export interface MenuItem {
 	link?: string;
@@ -22,7 +23,7 @@ const menuItems: MenuSection[] = [
 			{
 				name: 'Users',
 				icon: AccountCircleTwoToneIcon,
-				link: process.env.REACT_APP_BASEURL + '/user'
+				link: joinPath(process.env.REACT_APP_BASEURL, process.env.REACT_APP_BASEDIR, '/user')
 			}
 		]
 	}

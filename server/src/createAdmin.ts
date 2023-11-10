@@ -15,13 +15,13 @@ dataSource
 		}
 		// Creates a new admin user
 		const user_admin = new User();
-		user_admin.name = 'admin';
-		user_admin.last_name = 'admin';
+		user_admin.firstName = 'admin';
+		user_admin.lastName = 'admin';
 		user_admin.username = 'admin';
 		user_admin.password = 'admin';
 		user_admin.email = 'admin@admin.com';
 		user_admin.hashPassword();
-		user_admin.role = 'ADMIN';
+		user_admin.role = 'admin';
 		await user_admin.save();
 
 		console.info('Admin user created');
